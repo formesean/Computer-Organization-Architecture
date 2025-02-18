@@ -1,4 +1,4 @@
-#include "ALU.h"
+#include <stdio.h>
 
 // Global flags and ACC
 unsigned char C = 0;
@@ -6,6 +6,120 @@ unsigned char Z = 0;
 unsigned char OF = 0;
 unsigned char SF = 0;
 unsigned char ACC = 0;
+
+// Function prototypes
+int ALU(unsigned char operand1, unsigned char operand2, unsigned char control_signals);
+unsigned char twosComp(unsigned char data);
+unsigned char setFlags(unsigned int ACC);
+void printBin(int data, unsigned char data_width);
+void printBoothsTable(unsigned char A, unsigned char Q, unsigned char Qneg1, unsigned char M);
+unsigned char getLSB_8bit(unsigned char data);
+unsigned char getMSB_8bit(unsigned char data);
+
+// Arithmetic functions
+unsigned char add(unsigned char operand1, unsigned char operand2);
+unsigned char subtract(unsigned char operand1, unsigned char operand2);
+unsigned char multiply(unsigned char operand1, unsigned char operand2);
+
+// Logic functions
+unsigned char AND(unsigned char operand1, unsigned char operand2);
+unsigned char OR(unsigned char operand1, unsigned char operand2);
+unsigned char NOT(unsigned char operand1);
+unsigned char XOR(unsigned char operand1, unsigned char operand2);
+unsigned char shiftRight(unsigned char operand1);
+unsigned char shiftLeft(unsigned char operand1);
+
+void main()
+{
+    // ALU(0x03, 0x05, 0x02); // 00000011 - 00000101 (Subtract)
+    // ALU(0x88, 0x85, 0x01); // 10001000 + 10000101 (Add)
+    // ALU(0xC0, 0x0A, 0x03); // 11000000 * 00000010 (Multiply)
+    // ALU(0x46, 0x02, 0x03); // 01000110 * 00000010 (Multiply)
+
+    ALU(0x04,0x02,0x01); // Addition
+	ALU(0x04,0x02,0x02); // Subtraction
+	ALU(0x09,0x03,0x03); // Multiplication
+	ALU(0x04,0x02,0x04); // AND
+	ALU(0x04,0x02,0x05); // OR
+	ALU(0x04,0x02,0x06); // NOT
+	ALU(0x04,0x02,0x07); // XOR
+	ALU(0xFF,0x03,0x08); // Shift Right
+	ALU(0xFF,0x06,0x09); // Shift Left
+}
+
+// 0x01 - Addition
+// 0x02 - Subtraction
+// 0x03 - Multiplication
+// 0x04 - AND
+// 0x05 - OR
+// 0x06 - NOT
+// 0x07 - XOR
+// 0x08 - Shift Right (logical)
+// 0x09 - Shift Left (logical)
+int ALU(unsigned char operand1, unsigned char operand2, unsigned char control_signals)
+{
+    printf("\n*****************************************");
+    printf("\nFetching operands...");
+    printf("\nOP1 = ");
+    printBin(operand1, 8);
+    printf("\nOP2 = ");
+    printBin(operand2, 8);
+
+    unsigned int temp_ACC = 0;
+
+    switch (control_signals)
+    {
+    case 0x01: // Addition
+        printf("\nOperation = ADD");
+        printf("\nAdding OP1 & OP2");
+        temp_ACC = add(operand1, operand2);
+        break;
+    case 0x02: // Subtraction
+        printf("\nOperation = SUB");
+        printf("\n2's complement OP2");
+        printf("\nAdding OP1 & OP2");
+        temp_ACC = subtract(operand1, operand2);
+        break;
+    case 0x03: // Multiplication
+        printf("\nOperation = MUL");
+        temp_ACC = multiply(operand1, operand2);
+        break;
+    case 0x04: // AND
+        printf("\nOperation = AND");
+        temp_ACC = AND(operand1, operand2);
+        break;
+    case 0x05: // OR
+        printf("\nOperation = OR");
+        temp_ACC = OR(operand1, operand2);
+        break;
+    case 0x06: // NOT
+        printf("\nOperation = NOT");
+        temp_ACC = NOT(operand1);
+        break;
+    case 0x07: // XOR
+        printf("\nOperation = XOR");
+        temp_ACC = XOR(operand1, operand2);
+        break;
+    case 0x08: // Shift Right
+        printf("\nOperation = Shift Right");
+        temp_ACC = shiftRight(operand1);
+        break;
+    case 0x09: // Shift Left
+        printf("\nOperation = Shift Left");
+        temp_ACC = shiftLeft(operand1);
+        break;
+    default:
+        ACC = 0;
+        C = Z = OF = SF = 0;
+        break;
+    }
+
+    printf("\nACC = ");
+    printBin(temp_ACC, 16);
+    printf("\nZF=%d, CF=%d, SF=%d, OF=%d\n", Z, C, SF, OF);
+
+    return ACC;
+}
 
 // Function to print the Booth's multiplication table
 void printBoothsTable(unsigned char A, unsigned char Q, unsigned char Qneg1, unsigned char M)
@@ -177,98 +291,4 @@ unsigned char shiftLeft(unsigned char operand1)
     setFlags(ACC);
     OF = 0;
     return ACC;
-}
-
-// 0x01 - Addition
-// 0x02 - Subtraction
-// 0x03 - Multiplication
-// 0x04 - AND
-// 0x05 - OR
-// 0x06 - NOT
-// 0x07 - XOR
-// 0x08 - Shift Right (logical)
-// 0x09 - Shift Left (logical)
-int ALU(unsigned char operand1, unsigned char operand2, unsigned char control_signals)
-{
-    printf("\n*****************************************");
-    printf("\nFetching operands...");
-    printf("\nOP1 = ");
-    printBin(operand1, 8);
-    printf("\nOP2 = ");
-    printBin(operand2, 8);
-
-    unsigned int temp_ACC = 0;
-
-    switch (control_signals)
-    {
-    case 0x01: // Addition
-        printf("\nOperation = ADD");
-        printf("\nAdding OP1 & OP2");
-        temp_ACC = add(operand1, operand2);
-        break;
-    case 0x02: // Subtraction
-        printf("\nOperation = SUB");
-        printf("\n2's complement OP2");
-        printf("\nAdding OP1 & OP2");
-        temp_ACC = subtract(operand1, operand2);
-        break;
-    case 0x03: // Multiplication
-        printf("\nOperation = MUL");
-        temp_ACC = multiply(operand1, operand2);
-        break;
-    case 0x04: // AND
-        printf("\nOperation = AND");
-        temp_ACC = AND(operand1, operand2);
-        break;
-    case 0x05: // OR
-        printf("\nOperation = OR");
-        temp_ACC = OR(operand1, operand2);
-        break;
-    case 0x06: // NOT
-        printf("\nOperation = NOT");
-        temp_ACC = NOT(operand1);
-        break;
-    case 0x07: // XOR
-        printf("\nOperation = XOR");
-        temp_ACC = XOR(operand1, operand2);
-        break;
-    case 0x08: // Shift Right
-        printf("\nOperation = Shift Right");
-        temp_ACC = shiftRight(operand1);
-        break;
-    case 0x09: // Shift Left
-        printf("\nOperation = Shift Left");
-        temp_ACC = shiftLeft(operand1);
-        break;
-    default:
-        ACC = 0;
-        C = Z = OF = SF = 0;
-        break;
-    }
-
-    printf("\nACC = ");
-    printBin(temp_ACC, 16);
-    printf("\nZF=%d, CF=%d, SF=%d, OF=%d\n", Z, C, SF, OF);
-
-    return ACC;
-}
-
-int main()
-{
-    // ALU(0x03, 0x05, 0x02); // 00000011 - 00000101 (Subtract)
-    // ALU(0x88, 0x85, 0x01); // 10001000 + 10000101 (Add)
-    // ALU(0xC0, 0x0A, 0x03); // 11000000 * 00000010 (Multiply)
-    // ALU(0x46, 0x02, 0x03); // 01000110 * 00000010 (Multiply)
-
-    ALU(0x04,0x02,0x01); // Addition
-	ALU(0x04,0x02,0x02); // Subtraction
-	ALU(0x09,0x03,0x03); // Multiplication
-	ALU(0x04,0x02,0x04); // AND
-	ALU(0x04,0x02,0x05); // OR
-	ALU(0x04,0x02,0x06); // NOT
-	ALU(0x04,0x02,0x07); // XOR
-	ALU(0xFF,0x03,0x08); // Shift Right
-	ALU(0xFF,0x06,0x09); // Shift Left
-
-    return 0;
 }
