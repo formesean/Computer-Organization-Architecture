@@ -11,7 +11,7 @@
 #define WIB 0x07
 #define EOP 0x1F
 
-unsigned char ADDR = 0x00;
+unsigned int ADDR = 0x000;
 unsigned char BUS = 0x00;
 unsigned char dataMemory[2048];
 unsigned char ioBuffer[32];
@@ -19,7 +19,7 @@ int IOM = 0;
 int RW = 0; // if 1, write, otherwise read
 int OE = 0; // if 1, can output, otherwise cant output
 
-int CU(void);
+int CU();
 void mainMemory();
 void IOMemory();
 void initMemory();
@@ -36,20 +36,15 @@ void main(void)
 
 int CU(void)
 {
-  // starting address Program Memory (instruction) is 00016
-  // Data Memory starts at 40016
-  // I/O BUffer = 00016
   unsigned int PC = 0x000;
   unsigned int IR = 0x0000;
   unsigned int MAR = 0x000;
-  unsigned int MBR = 0x00;
+  unsigned char MBR = 0x00;
   unsigned int IOAR = 0x000;
-  unsigned int IOBR = 0x00;
+  unsigned char IOBR = 0x00;
 
   unsigned char inst_code = 0x0000;
   unsigned int operand = 0x000;
-
-  int FETCH = 0;
   int exitCode = 0;
 
   while (!exitCode)
@@ -58,37 +53,26 @@ int CU(void)
     printf("PC\t\t\t: 0x%03X\n", PC);
     printf("Fetching instruction...\n");
 
-    FETCH = 1;
-    IOM = 1;
-    RW = 0;
-    OE = 1;
+    // fetch upper byte
+    ADDR = PC;
+    IOM = 1; RW = 0; OE = 1;
+    mainMemory();
+    IR = (unsigned int)BUS << 8;
+    PC++;
 
+    // fetch lower byte
     ADDR = PC;
     mainMemory();
-    if (FETCH == 1)
-    {
-      // fetching upper byte
-      IR = (int) BUS;
-      IR = IR << 8;
-      PC++;
-      ADDR = PC;
-    }
-
-    mainMemory();
-    if (FETCH == 1)
-    {
-      // fetching lower byte
-      IR = IR | BUS;
-      PC++;
-    }
+    IR |= BUS;
+    PC++;
 
     printf("IR\t\t\t: 0x%04X\n", IR);
 
-    // decoding instruction
-    inst_code = IR >> 11;
+    // Decode instruction
+    inst_code = (IR >> 11) & 0x1F;
     operand = IR & 0x07FF;
 
-    printf("Instrucion Code\t\t: 0x%02X\n", inst_code);
+    printf("Instruction Code\t: 0x%02X\n", inst_code);
     printf("Operand\t\t\t: 0x%03X\n", operand);
 
     printf("Instruction\t\t: ");
@@ -97,41 +81,29 @@ int CU(void)
     {
       printf("WM\n");
       MAR = operand;
+      ADDR = MAR;
       BUS = MBR;
-
-      FETCH = 0;
-      IOM = 1;
-      RW = 1;
-      OE = 0;
+      IOM = 1; RW = 1; OE = 0;
       mainMemory();
-
       printf("Writing data to memory...\n");
     }
-
     else if (inst_code == RM)
     {
       printf("RM\n");
       MAR = operand;
-
-      FETCH = 0;
-      IOM = 1;
-      RW = 0;
-      OE = 1;
+      ADDR = MAR;
+      IOM = 1; RW = 0; OE = 1;
       mainMemory();
-
+      MBR = BUS;
       printf("Reading data to memory...\n");
       printf("MBR\t\t: 0x%02X\n", MBR);
     }
-
     else if (inst_code == BR)
     {
       printf("BR\n");
       PC = operand;
-      OE = 1;
       printf("Branch to 0x%03X on next cycle.\n", PC);
-      getch();
     }
-
     else if (inst_code == RIO)
     {
       printf("RIO\n");
@@ -139,7 +111,6 @@ int CU(void)
       IOBR = BUS;
       printf("Reading to IO buffer...\n");
     }
-
     else if (inst_code == WIO)
     {
       printf("WIO\n");
@@ -147,51 +118,37 @@ int CU(void)
       ioBuffer[IOAR] = IOBR;
       printf("Writing to IO buffer...\n");
     }
-
     else if (inst_code == WB)
     {
       printf("WB\n");
-      FETCH = 0;
-      IOM = 1;
-      RW = 0;
-      OE = 1;
-      mainMemory();
-
-      MBR = BUS;
-
+      MBR = operand & 0xFF;
       printf("Loading data to MBR...\n");
       printf("MBR\t\t: 0x%02X\n", MBR);
     }
-
     else if (inst_code == WIB)
     {
       printf("WIB\n");
-      FETCH = 0;
-      IOM = 0;
-      RW = 1;
-      OE = 0;
-
-      IOBR = BUS;
-      IOMemory();
+      IOBR = operand & 0xFF;
       printf("Loading data to IOBR...\n");
       printf("IOBR\t\t: 0x%02X\n", IOBR);
     }
-
     else if (inst_code == EOP)
     {
       printf("EOP\n");
       exitCode = 1;
-      printf("End of program.\n");
-      getch();
-      return exitCode;
+      printf("End of program.\n\n");
+      return 1;
     }
-
     else
     {
+      printf("Unknown instruction\n");
       return 0;
     }
 
+    getch();
   }
+
+  return 1;
 }
 
 void mainMemory(void)
@@ -223,7 +180,7 @@ void initMemory(void)
   dataMemory[0x000] = 0x30;
   dataMemory[0x001] = 0xFF;
   dataMemory[0x002] = 0x0C;
-  dataMemory[0x003] = 0x00; // 0xFF
+  dataMemory[0x003] = 0x00;
   dataMemory[0x004] = 0x14;
   dataMemory[0x005] = 0x00;
   dataMemory[0x006] = 0x19;
