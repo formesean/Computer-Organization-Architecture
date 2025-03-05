@@ -143,13 +143,13 @@ int CU(void)
       RW = 0;
       OE = 1;
 
+      printf("Reading data to memory...\n");
       ADDR = MAR;
+      mainMemory();
 
       if (_MEMORY)
         MBR = BUS;
 
-      mainMemory();
-      printf("Reading data to memory...\n");
       printf("MBR\t\t\t: 0x%02X\n", MBR);
     }
     else if (inst_code == BR)
