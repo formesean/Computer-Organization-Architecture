@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <conio.h>
 
-// Arithmetic& Logical (Instruction Code)
+// Arithmetic & Logical (Instruction Code)
 #define ADD 0x1E
 #define SUB 0x1D
 #define MUL 0x1B
@@ -33,6 +33,10 @@
 #define EOP 0x1F
 
 // Global variables
+
+// Variables so that we can print the operand1 and acc globally
+unsigned int global_OPERAND1 = 0x000;
+unsigned int global_ACC = 0x000;
 
 // Flags
 unsigned char FLAGS = 0x00;
@@ -89,7 +93,8 @@ int main()
   initMemory(); // populate memory
 
   if (CU() == 1)
-    printf("Program run successfully!");
+  {
+  }
   else
     printf("Error encountered, program terminated!");
 
@@ -100,99 +105,75 @@ int main()
 int ALU()
 {
   static int ACC = 0x000;
-
-  printf("\n*****************************************");
-  printf("\nFetching operands...");
-  printf("\nOP1 = ");
-  printBin(ACC, 8);
-  printf("\nOP2 = ");
-  printBin(BUS, 8);
+  global_OPERAND1 = ACC;
 
   switch (CONTROL)
   {
   case ADD: // Addition
-    printf("\nOperation = ADD");
-    printf("\nAdding OP1 & OP2");
     ACC = arithmeticAddition(ACC, BUS);
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case SUB: // Subtraction
-    printf("\nOperation = SUB");
-    printf("\nSubtracting OP1 & OP2");
     ACC = arithmeticSubtraction(ACC, BUS);
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case MUL: // Multiplication
-    printf("\nOperation = MUL");
     ACC = arithmeticMultiplication(ACC, BUS);
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case AND: // AND
-    printf("\nOperation = AND");
     ACC = logicalAND(ACC, BUS);
-    printACC(ACC, 8);
+    global_ACC = ACC;
     break;
   case OR: // OR
-    printf("\nOperation = OR");
     ACC = logicalOR(ACC, BUS);
-    printACC(ACC, 8);
+    global_ACC = ACC;
     break;
   case NOT: // NOT
-    printf("\nOperation = NOT");
     ACC = logicalNOT(ACC);
-    printACC(ACC, 8);
+    global_ACC = ACC;
     break;
   case XOR: // XOR
-    printf("\nOperation = XOR");
     ACC = logicalXOR(ACC, BUS);
-    printACC(ACC, 8);
+    global_ACC = ACC;
     break;
   case SHR: // Shift Right
-    printf("\nOperation = Shift Right");
     ACC = logicalShiftRight(ACC, BUS);
-    printACC(ACC, 8);
+    global_ACC = ACC;
     break;
   case SHL: // Shift Left
-    printf("\nOperation = Shift Left");
     ACC = logicalShiftLeft(ACC, BUS);
-    printACC(ACC, 8);
+    global_ACC = ACC;
     break;
   case WACC:
-    printf("\nWACC");
     ACC = (unsigned char)BUS;
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case RACC:
-    printf("\nRACC");
     BUS = ACC;
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case BRE:
-    printf("\nBRE");
     ACC = (ACC + twosComp(BUS)) & 0x00FF;
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case BRNE:
-    printf("\nBRNE");
     ACC = (ACC + twosComp(BUS)) & 0x00FF;
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case BRGT:
-    printf("\nBRGT");
     ACC = (ACC + twosComp(BUS)) & 0x00FF;
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   case BRLT:
-    printf("\nBRLT");
     ACC = (ACC + twosComp(BUS)) & 0x00FF;
-    printACC(ACC, 16);
+    global_ACC = ACC;
     break;
   default:
     printf("Out of range!\n");
   }
 
   setFlags(ACC);
-  printf("\nZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
 }
 
 /*============================================================================================================*/
@@ -294,20 +275,15 @@ unsigned char arithmeticMultiplication(unsigned char operand1, unsigned char ope
   unsigned char Qsub0 = getLSB_8bit(Q);
   unsigned char M = operand1;
 
-  printf("\n    A        Q     Q_-1     M\n");
-  printBoothsTable(A, Q, Qneg1, M);
-
   for (int i = 0; i < 8; i++)
   {
     if ((int)Qsub0 == 1 && (int)Qneg1 == 0)
     {
       A = arithmeticSubtraction(A, M);
-      printBoothsTable(A, Q, Qneg1, M);
     }
     else if ((int)Qsub0 == 0 && (int)Qneg1 == 1)
     {
       A = arithmeticAddition(A, M);
-      printBoothsTable(A, Q, Qneg1, M);
     }
     A_MSB = getMSB_8bit(A);
     A_LSB = getLSB_8bit(A);
@@ -317,8 +293,6 @@ unsigned char arithmeticMultiplication(unsigned char operand1, unsigned char ope
     A = logicalOR((A >> 1), (A_MSB << 7));
     Q = logicalOR((Q >> 1), (A_LSB << 7));
     Qsub0 = getLSB_8bit(Q);
-
-    printBoothsTable(A, Q, Qneg1, M);
   }
 
   ACC_local = A;
@@ -379,9 +353,7 @@ int CU(void)
 
   while (!exitCode)
   {
-    printf("****************************\n");
-    printf("PC\t\t\t: 0x%03X\n", PC);
-    printf("Fetching instruction...\n");
+    printf("%03X\t", PC);
 
     // Setting control signals, main memory access, read operation, allow data movement
     CONTROL = inst_code;
@@ -409,20 +381,13 @@ int CU(void)
     IR |= BUS;
     PC++;
 
-    printf("IR\t\t\t: 0x%04X\n", IR);
-
     // Decode instruction
     inst_code = (IR >> 11) & 0x1F;
     operand = IR & 0x07FF;
 
-    printf("Instruction Code\t: 0x%02X\n", inst_code);
-    printf("Operand\t\t\t: 0x%03X\n", operand);
-
-    printf("Instruction\t\t: ");
-
     if (inst_code == WM)
     {
-      printf("WM\n");
+      printf("WM\t");
       MAR = operand;
 
       // set internal control signals, accessing memory
@@ -442,11 +407,10 @@ int CU(void)
         BUS = MBR;
 
       mainMemory();
-      printf("Writing data to memory...\n");
     }
     else if (inst_code == RM)
     {
-      printf("RM\n");
+      printf("RM\t");
       MAR = operand;
 
       // set internal control signals, accessing memory
@@ -460,28 +424,24 @@ int CU(void)
       RW = 0;
       OE = 1;
 
-      printf("Reading data to memory...\n");
       ADDR = MAR;
       mainMemory();
 
       if (_MEMORY)
         MBR = BUS;
-
-      printf("MBR\t\t\t: 0x%02X\n", MBR);
     }
     else if (inst_code == BR)
     {
-      printf("BR\n");
+      printf("BR\t");
       PC = operand;
 
       // set external control signals
       CONTROL = inst_code;
       OE = 1;
-      printf("Branch to 0x%03X on next cycle.\n", PC);
     }
     else if (inst_code == RIO)
     {
-      printf("RIO\n");
+      printf("RIO\t");
       IOAR = operand;
 
       // set internal control signals, accessing I/O
@@ -495,18 +455,15 @@ int CU(void)
       RW = 0;
       OE = 1;
 
-      printf("Reading to IO buffer...\n");
       ADDR = IOAR;
       IOMemory();
 
       if (_IO)
         IOBR = BUS;
-
-      printf("IOBR\t\t\t: 0x%02X\n", IOBR);
     }
     else if (inst_code == WIO)
     {
-      printf("WIO\n");
+      printf("WIO\t");
       IOAR = operand;
 
       // set internal control signals, accessing I/O
@@ -520,18 +477,16 @@ int CU(void)
       RW = 1;
       OE = 1;
 
-      printf("Writing to IO buffer...\n");
       ADDR = IOAR;
 
       if (_IO)
         BUS = IOBR;
 
       IOMemory();
-      printf("IOBR\t\t\t: 0x%02X\n", IOBR);
     }
     else if (inst_code == WB)
     {
-      printf("WB\n");
+      printf("WB\t");
 
       // set internal control signals, accessing memory
       _FETCH = 0;
@@ -544,18 +499,15 @@ int CU(void)
       RW = 1;
       OE = 1;
 
-      printf("Loading data to MBR...\n");
       ADDR = PC - 1;
       mainMemory();
 
       if (_MEMORY)
         MBR = BUS;
-
-      printf("MBR\t\t\t: 0x%02X\n", MBR);
     }
     else if (inst_code == WIB)
     {
-      printf("WIB\n");
+      printf("WIB\t");
 
       // set internal control signals, accessing I/O
       _FETCH = 0;
@@ -567,56 +519,46 @@ int CU(void)
       IOM = 0;
       RW = 1;
       OE = 1;
-
-      printf("Loading data to IOBR...\n");
       ADDR = PC - 1;
 
       if (_IO)
         IOBR = BUS;
 
       IOMemory();
-      printf("IOBR\t\t\t: 0x%02X\n", IOBR);
-    }
-    else if (inst_code == EOP)
-    {
-      printf("EOP\n");
-      exitCode = 1;
-      printf("End of program.\n\n");
-      return 1;
     }
     else if (inst_code == ADD || inst_code == SUB || inst_code == MUL || inst_code == AND || inst_code == OR || inst_code == NOT || inst_code == XOR || inst_code == SHL || inst_code == SHR || inst_code == WACC)
     {
       switch (inst_code)
       {
       case ADD:
-        printf("ADD\n");
+        printf("ADD\t");
         break;
       case SUB:
-        printf("SUB\n");
+        printf("SUB\t");
         break;
       case MUL:
-        printf("MUL\n");
+        printf("MUL\t");
         break;
       case AND:
-        printf("AND\n");
+        printf("AND\t");
         break;
       case OR:
-        printf("OR\n");
+        printf("OR\t");
         break;
       case NOT:
-        printf("NOT\n");
+        printf("NOT\t");
         break;
       case XOR:
-        printf("XOR\n");
+        printf("XOR\t");
         break;
       case SHL:
-        printf("SHL\n");
+        printf("SHL\t");
         break;
       case SHR:
-        printf("SHR\n");
+        printf("SHR\t");
         break;
       case WACC:
-        printf("WACC\n");
+        printf("WACC\t");
         break;
       }
 
@@ -635,11 +577,10 @@ int CU(void)
         BUS = MBR;
 
       ALU();
-      printf("MBR\t\t\t: 0x%02X\n", MBR);
     }
     else if (inst_code == RACC)
     {
-      printf("RACC\n");
+      printf("RACC\t");
 
       // set internal control signals
       _FETCH = 0;
@@ -655,14 +596,11 @@ int CU(void)
       ALU();
       if (_MEMORY)
         MBR = BUS;
-
-      printf("Reading ACC to BUS...\n");
-      printf("MBR\t\t\t: 0x%02X\n", MBR);
     }
     else if (inst_code == SWAP)
     {
       unsigned char temp;
-      printf("SWAP\n");
+      printf("SWAP\t");
 
       // set internal control signals
       _FETCH = 0;
@@ -675,29 +613,25 @@ int CU(void)
       RW = 0;
       OE = 0;
 
-      printf("Swapping MBR and IOBR...\n");
       MBR = MBR ^ IOBR;
       IOBR = MBR ^ IOBR;
       MBR = MBR ^ IOBR;
-
-      printf("MBR\t\t\t: 0x%02X\n", MBR);
-      printf("IOBR\t\t\t: 0x%02X\n", IOBR);
     }
     else if (inst_code == BRE || inst_code == BRNE || inst_code == BRGT || inst_code == BRLT)
     {
       switch (inst_code)
       {
       case BRE:
-        printf("BRE\n");
+        printf("BRE\t");
         break;
       case BRNE:
-        printf("BRNE\n");
+        printf("BRNE\t");
         break;
       case BRGT:
-        printf("BRGT\n");
+        printf("BRGT\t");
         break;
       case BRLT:
-        printf("BRLT\n");
+        printf("BRLT\t");
         break;
       }
 
@@ -717,7 +651,6 @@ int CU(void)
       if (_MEMORY)
         BUS = MBR;
 
-      printf("Comparing ACC and BUS...\n");
       ALU();
 
       switch (inst_code)
@@ -727,7 +660,6 @@ int CU(void)
         {
           PC = ADDR;
           OE = 1;
-          printf("Branch tp 0x%03X on next cycle\n", PC);
         }
         break;
       case BRNE:
@@ -735,7 +667,6 @@ int CU(void)
         {
           PC = ADDR;
           OE = 1;
-          printf("Branch tp 0x%03X on next cycle\n", PC);
         }
         break;
       case BRGT:
@@ -743,7 +674,6 @@ int CU(void)
         {
           PC = ADDR;
           OE = 1;
-          printf("Branch tp 0x%03X on next cycle\n", PC);
         }
         break;
       case BRLT:
@@ -751,24 +681,128 @@ int CU(void)
         {
           PC = ADDR;
           OE = 1;
-          printf("Branch tp 0x%03X on next cycle\n", PC);
         }
         break;
       }
     }
+
+    if (operand == 0)
+      printf("\t\t");
     else
+      printf("0x%03X\t\t", operand);
+
+    switch (inst_code)
     {
-      printf("Unknown instruction\n");
-      return 0;
+    case WB:
+      printf("; MBR = 0x%02X\n", MBR);
+      break;
+
+    case WM:
+      printf("; dataMemory[0x%03X] : 0x%02X\n", operand, BUS);
+      break;
+
+    case WACC:
+      printf("; ACC = 0x%02X\n", global_ACC);
+      break;
+
+    case ADD:
+      printf("; ACC = (0x%02X) + (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case RM:
+      printf("; MBR = 0x%02X\n", MBR);
+      break;
+
+    case MUL:
+      printf("; ACC = (0x%02X) x (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case RACC:
+      printf("; MBR = 0x%02X\n", MBR);
+      break;
+
+    case WIB:
+      printf("; IOBR = 0x%02X\n", IOBR);
+      break;
+
+    case WIO:
+      printf("; ioBuffer[0x%03X] : 0x%02X\n", operand, BUS);
+      break;
+
+    case SUB:
+      printf("; ACC = (0x%02X) - (0x%02X) = (0x%01X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case SHL:
+      printf("; ACC = (0x%02X) << (0x%02X) = (%d)\t\t", global_OPERAND1, (unsigned int)BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case SHR:
+      printf("; ACC = (0x%02X) >> (0x%02X) = (%d)\t\t", global_OPERAND1, (unsigned int)BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case OR:
+      printf("; ACC = (0x%02X) OR (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case NOT:
+      printf("; ACC = NOT (0x%02X) = (0x%02X)\t\t", global_OPERAND1, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case RIO:
+      printf("; IOBR = 0x%02X\n", IOBR);
+      break;
+
+    case SWAP:
+      printf("; MBR = 0x%02X, IOBR = 0x%02X\n", MBR, IOBR);
+      break;
+
+    case XOR:
+      printf("; ACC = (0x%02X) XOR (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case AND:
+      printf("; ACC = (0x%02X) AND (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case BRE:
+      printf("; ACC = (0x%02X) - (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case BRGT:
+      printf("; ACC = (0x%02X) - (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case BRLT:
+      printf("; ACC = (0x%02X) - (0x%02X) = (0x%02X)\t\t", global_OPERAND1, BUS, global_ACC);
+      printf("ZF=%d, CF=%d, SF=%d, OF=%d\n", FLAGS & 0x01, (FLAGS >> 1) & 0x01, (FLAGS >> 2) & 0x01, (FLAGS >> 7) & 0x01);
+      break;
+
+    case BR:
+      printf("; PC <- 0x%03X", PC);
+
+    case EOP:
+      printf("\n%03X\t", PC+10);
+      printf("EOP\n");
+      exitCode = 1;
+      return 1;
+      break;
+
+    default:
+      break;
     }
 
-    printf("BUS\t\t: 0x%02X\n", BUS);
-    printf("ADDR\t\t: 0x%03X\n", ADDR);
-    printf("PC\t\t: 0x%03X\n", PC);
-    printf("MAR\t\t: 0x%02X\n", MAR);
-    printf("IOAR\t\t: 0x%02X\n", IOAR);
-    printf("IOBR\t\t: 0x%02X\n", IOBR);
-    printf("CONTROL\t\t: 0x%02X\n", CONTROL);
     getch();
   }
 
@@ -884,4 +918,5 @@ void initMemory(void)
   dataMemory[0x050] = 0x18;
   dataMemory[0x051] = 0x48;
   dataMemory[0x052] = 0xF8;
+  dataMemory[0x053] = 0x00;
 }
