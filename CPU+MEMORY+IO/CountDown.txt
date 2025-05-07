@@ -1,0 +1,25 @@
+org 00h
+
+000       WIB 0x09
+002       WIO 0x00
+004       WIB 0x08
+006       WIO 0x00
+008       WIB 0x07
+00A       WIO 0x00
+00C       WIB 0x06
+00E       WIO 0x00
+010       WIB 0x05
+012       WIO 0x00
+014       WIB 0x04
+016       WIO 0x00
+018       WIB 0x03
+01A       WIO 0x00
+01C       WIB 0x02
+01E       WIO 0x00
+020       WIB 0x01
+022       WIO 0x00
+024       WIB 0x00
+026       WIO 0x00
+028       EOP
+
+ret

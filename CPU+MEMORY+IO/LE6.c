@@ -1,3 +1,5 @@
+// TEAM 8
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>
@@ -37,8 +39,8 @@
 // Flags
 unsigned char FLAGS = 0x00;
 
-// Memory Arrays
-unsigned char ioBuffer[32];
+/* declaration of IO memory (latches and buffers) */
+unsigned char iOData[32]; // 8-bit data x 32 (16 latches and 16 buffers)
 
 // Memory Chip
 long A1[32], A2[32], A3[32], A4[32], A5[32], A6[32], A7[32], A8[32];
@@ -85,6 +87,10 @@ int CU();
 void mainMemory();
 void IOMemory();
 void initMemory();
+
+// I/O Connection functions
+void InputSim();
+void SevenSegment();
 
 /*============================================================================================================*/
 int main()
@@ -848,12 +854,18 @@ void mainMemory(void)
 
 void IOMemory(void)
 {
-  if (IOM == 0)
+  if (OE)
   {
-    if (RW == 0 && OE == 1)
-      BUS = ioBuffer[ADDR]; // I/O read
-    else if (RW == 1 && OE == 1)
-      ioBuffer[ADDR] = BUS; // I/O write
+    if (RW && !IOM) // check if memory write and IO Memory access
+    {
+      if (ADDR >= 0x000 && ADDR <= 0x00F) // check the address if valid
+        iOData[ADDR] = BUS;               // write data in BUS to IO Memory
+    }
+    else
+    {
+      if (ADDR >= 0x010 && ADDR <= 0x01F) // check the address if valid
+        BUS = iOData[ADDR];               // load data to BUS
+    }
   }
 }
 
@@ -867,87 +879,170 @@ void initMemory(void)
   // Format ADDR=<program memory address>; BUS=<instruction>; MainMemory()
   // Calling MainMemory() writes the instruction to memory
 
-  ADDR = 0x000; BUS = 0x30; mainMemory();
-  ADDR = 0x001; BUS = 0x15; mainMemory();
-  ADDR = 0x002; BUS = 0x0C; mainMemory();
+  ADDR = 0x000; BUS = 0x38; mainMemory();
+  ADDR = 0x001; BUS = 0x09; mainMemory();
+  ADDR = 0x002; BUS = 0x28; mainMemory();
   ADDR = 0x003; BUS = 0x00; mainMemory();
-  ADDR = 0x004; BUS = 0x30; mainMemory();
-  ADDR = 0x005; BUS = 0x05; mainMemory();
-  ADDR = 0x006; BUS = 0x48; mainMemory();
+  ADDR = 0x004; BUS = 0x38; mainMemory();
+  ADDR = 0x005; BUS = 0x08; mainMemory();
+  ADDR = 0x006; BUS = 0x28; mainMemory();
   ADDR = 0x007; BUS = 0x00; mainMemory();
-  ADDR = 0x008; BUS = 0x30; mainMemory();
-  ADDR = 0x009; BUS = 0x08; mainMemory();
-  ADDR = 0x00A; BUS = 0xF0; mainMemory();
+  ADDR = 0x008; BUS = 0x38; mainMemory();
+  ADDR = 0x009; BUS = 0x07; mainMemory();
+  ADDR = 0x00A; BUS = 0x28; mainMemory();
   ADDR = 0x00B; BUS = 0x00; mainMemory();
-  ADDR = 0x00C; BUS = 0x14; mainMemory();
-  ADDR = 0x00D; BUS = 0x00; mainMemory();
-  ADDR = 0x00E; BUS = 0xD8; mainMemory();
+  ADDR = 0x00C; BUS = 0x38; mainMemory();
+  ADDR = 0x00D; BUS = 0x06; mainMemory();
+  ADDR = 0x00E; BUS = 0x28; mainMemory();
   ADDR = 0x00F; BUS = 0x00; mainMemory();
-  ADDR = 0x010; BUS = 0x58; mainMemory();
-  ADDR = 0x011; BUS = 0x00; mainMemory();
-  ADDR = 0x012; BUS = 0x0C; mainMemory();
-  ADDR = 0x013; BUS = 0x01; mainMemory();
+  ADDR = 0x010; BUS = 0x38; mainMemory();
+  ADDR = 0x011; BUS = 0x05; mainMemory();
+  ADDR = 0x012; BUS = 0x28; mainMemory();
+  ADDR = 0x013; BUS = 0x00; mainMemory();
   ADDR = 0x014; BUS = 0x38; mainMemory();
-  ADDR = 0x015; BUS = 0x0B; mainMemory();
+  ADDR = 0x015; BUS = 0x04; mainMemory();
   ADDR = 0x016; BUS = 0x28; mainMemory();
   ADDR = 0x017; BUS = 0x00; mainMemory();
-  ADDR = 0x018; BUS = 0x30; mainMemory();
-  ADDR = 0x019; BUS = 0x10; mainMemory();
-  ADDR = 0x01A; BUS = 0xE8; mainMemory();
+  ADDR = 0x018; BUS = 0x38; mainMemory();
+  ADDR = 0x019; BUS = 0x03; mainMemory();
+  ADDR = 0x01A; BUS = 0x28; mainMemory();
   ADDR = 0x01B; BUS = 0x00; mainMemory();
-  ADDR = 0x01C; BUS = 0x58; mainMemory();
-  ADDR = 0x01D; BUS = 0x00; mainMemory();
+  ADDR = 0x01C; BUS = 0x38; mainMemory();
+  ADDR = 0x01D; BUS = 0x02; mainMemory();
   ADDR = 0x01E; BUS = 0x28; mainMemory();
-  ADDR = 0x01F; BUS = 0x01; mainMemory();
-  ADDR = 0x020; BUS = 0xB0; mainMemory();
-  ADDR = 0x021; BUS = 0x00; mainMemory();
-  ADDR = 0x022; BUS = 0xB0; mainMemory();
+  ADDR = 0x01F; BUS = 0x00; mainMemory();
+  ADDR = 0x020; BUS = 0x38; mainMemory();
+  ADDR = 0x021; BUS = 0x01; mainMemory();
+  ADDR = 0x022; BUS = 0x28; mainMemory();
   ADDR = 0x023; BUS = 0x00; mainMemory();
-  ADDR = 0x024; BUS = 0xA8; mainMemory();
+  ADDR = 0x024; BUS = 0x38; mainMemory();
   ADDR = 0x025; BUS = 0x00; mainMemory();
-  ADDR = 0x026; BUS = 0x14; mainMemory();
-  ADDR = 0x027; BUS = 0x01; mainMemory();
-  ADDR = 0x028; BUS = 0xC8; mainMemory();
-  ADDR = 0x029; BUS = 0x00; mainMemory();
-  ADDR = 0x02A; BUS = 0xC0; mainMemory();
-  ADDR = 0x02B; BUS = 0x00; mainMemory();
-  ADDR = 0x02C; BUS = 0x20; mainMemory();
-  ADDR = 0x02D; BUS = 0x01; mainMemory();
-  ADDR = 0x02E; BUS = 0x70; mainMemory();
-  ADDR = 0x02F; BUS = 0x00; mainMemory();
-  ADDR = 0x030; BUS = 0xB8; mainMemory();
-  ADDR = 0x031; BUS = 0x00; mainMemory();
-  ADDR = 0x032; BUS = 0x30; mainMemory();
-  ADDR = 0x033; BUS = 0xFF; mainMemory();
-  ADDR = 0x034; BUS = 0xD0; mainMemory();
-  ADDR = 0x035; BUS = 0x00; mainMemory();
-  ADDR = 0x036; BUS = 0x14; mainMemory();
-  ADDR = 0x037; BUS = 0x01; mainMemory();
-  ADDR = 0x038; BUS = 0xA0; mainMemory();
-  ADDR = 0x039; BUS = 0x3C; mainMemory();
-  ADDR = 0x03A; BUS = 0x30; mainMemory();
-  ADDR = 0x03B; BUS = 0xF0; mainMemory();
-  ADDR = 0x03C; BUS = 0x90; mainMemory();
-  ADDR = 0x03D; BUS = 0x40; mainMemory();
-  ADDR = 0x03E; BUS = 0x88; mainMemory();
-  ADDR = 0x03F; BUS = 0x44; mainMemory();
-  ADDR = 0x040; BUS = 0x30; mainMemory();
-  ADDR = 0x041; BUS = 0x00; mainMemory();
-  ADDR = 0x042; BUS = 0x48; mainMemory();
-  ADDR = 0x043; BUS = 0x00; mainMemory();
-  ADDR = 0x044; BUS = 0x30; mainMemory();
-  ADDR = 0x045; BUS = 0x03; mainMemory();
-  ADDR = 0x046; BUS = 0x48; mainMemory();
-  ADDR = 0x047; BUS = 0x00; mainMemory();
-  ADDR = 0x048; BUS = 0x30; mainMemory();
-  ADDR = 0x049; BUS = 0x00; mainMemory();
-  ADDR = 0x04A; BUS = 0xA0; mainMemory();
-  ADDR = 0x04B; BUS = 0x52; mainMemory();
-  ADDR = 0x04C; BUS = 0x30; mainMemory();
-  ADDR = 0x04D; BUS = 0x01; mainMemory();
-  ADDR = 0x04E; BUS = 0xE8; mainMemory();
-  ADDR = 0x04F; BUS = 0x00; mainMemory();
-  ADDR = 0x050; BUS = 0x18; mainMemory();
-  ADDR = 0x051; BUS = 0x48; mainMemory();
-  ADDR = 0x052; BUS = 0xF8; mainMemory();
+  ADDR = 0x026; BUS = 0x28; mainMemory();
+  ADDR = 0x027; BUS = 0x00; mainMemory();
+  ADDR = 0x028; BUS = 0xF8; mainMemory();
+}
+
+/*===============================================I/O Connection===============================================*/
+void InputSim()
+{
+  unsigned char data;
+
+  for (int i = 7; i >= 0; i--)
+  {
+    /* load source */
+    data = iOData[0x001];
+    /* shift bit to LSB */
+    data = data >> i;
+    /* mask upper bit */
+    data = data & 0x01;
+    /* position bit */
+    data = data << (7 - i);
+    /* write bit to dest buffer */
+    iOData[0x01F] = iOData[0x01F] | data;
+  }
+}
+
+void SevenSegment()
+{
+  if (iOData[ADDR] == 0x01)
+  {
+    printf("    X\n");
+    printf("    X\n");
+    printf("    X\n");
+    printf("    X\n");
+    printf("    X\n");
+    printf("    X\n");
+    printf("    X\n");
+  }
+  else if (iOData[ADDR] == 0x02)
+  {
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf(" XXXXX\n");
+    printf(" X    \n");
+    printf(" X    \n");
+    printf(" XXXXX\n");
+  }
+  else if (iOData[ADDR] == 0x03)
+  {
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf(" XXXXX\n");
+  }
+  else if (iOData[ADDR] == 0x04)
+  {
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf("     X\n");
+  }
+  else if (iOData[ADDR] == 0x05)
+  {
+    printf(" XXXXX\n");
+    printf(" X    \n");
+    printf(" X    \n");
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf(" XXXXX\n");
+  }
+  else if (iOData[ADDR] == 0x06)
+  {
+    printf(" XXXXX\n");
+    printf(" X    \n");
+    printf(" X    \n");
+    printf(" XXXXX\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" XXXXX\n");
+  }
+  else if (iOData[ADDR] == 0x07)
+  {
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf("     X\n");
+  }
+  else if (iOData[ADDR] == 0x08)
+  {
+    printf(" XXXXX\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" XXXXX\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" XXXXX\n");
+  }
+  else if (iOData[ADDR] == 0x09)
+  {
+    printf(" XXXXX\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" XXXXX\n");
+    printf("     X\n");
+    printf("     X\n");
+    printf(" XXXXX\n");
+  }
+  else if (iOData[ADDR] == 0x00)
+  {
+    printf(" XXXXX\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" X   X\n");
+    printf(" XXXXX\n");
+  }
+  // getc(stdin);
 }
