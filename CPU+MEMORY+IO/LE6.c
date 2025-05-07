@@ -536,6 +536,7 @@ int CU(void)
         BUS = IOBR;
 
       IOMemory();
+      SevenSegment();
       printf("IOBR\t\t\t: 0x%02X\n", IOBR);
     }
     else if (inst_code == WB)
